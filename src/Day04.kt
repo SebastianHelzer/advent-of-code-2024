@@ -58,7 +58,6 @@ fun main() {
     val testInput = readInput("Day04_test")
     check(part1(testInput) == 18)
 
-    // Read the input from the `src/Day01.txt` file.
     val input = readInput("Day04")
     part1(input).println()
 
