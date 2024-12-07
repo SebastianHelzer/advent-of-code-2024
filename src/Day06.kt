@@ -1,3 +1,9 @@
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.measureTime
+
 fun main() {
     fun getOneStepForwardPosition(
         orientation: Char,
@@ -56,13 +62,21 @@ fun main() {
         map.map { it.toMutableList() }.toMutableList().apply { this[position] = '#' }
 
     fun part2(input: List<String>): Int {
-        val (guardOrientation, guardPosition, map) = parseData(input)
-        val (originalPath, _) = runGuardPath(guardOrientation, guardPosition, map)
-        return originalPath
-            .map { it.second }
-            .toSet()
-            .filter { runGuardPath(guardOrientation, guardPosition, addObstacle(map, it)).second }
-            .size
+        val count = AtomicInteger(0)
+        runBlocking(Dispatchers.Default) {
+            val (guardOrientation, guardPosition, map) = parseData(input)
+            val (originalPath, _) = runGuardPath(guardOrientation, guardPosition, map)
+            originalPath
+                .map { it.second }
+                .toSet()
+                .forEach {
+                    launch {
+                        if(runGuardPath(guardOrientation, guardPosition, addObstacle(map, it)).second) count.incrementAndGet()
+                    }
+                }
+        }
+
+        return count.get()
     }
 
     val testInput = """
@@ -80,10 +94,17 @@ fun main() {
     check(part1(testInput) == 41)
 
     val input = readInput("Day06")
-    part1(input).println()
+    measureTime {
+        // 7.78ms
+        part1(input).println()
+    }.println()
 
     check(part2(testInput) == 6)
-    part2(input).println()
+    measureTime {
+        // 729ms in order
+        // 462ms parallelized
+        part2(input).println()
+    }.println()
 }
 
 typealias Position = Pair<Int, Int>
